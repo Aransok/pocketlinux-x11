@@ -96,11 +96,17 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: pocketlinux-x11-debug.apk
-      - name: Create the release
+      - name: Attach the APK to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" pocketlinux-x11-debug.apk \
-            --repo "${{ github.repository }}" \
-            --title "Pocket Linux Display ${{ github.ref_name }}" \
-            --generate-notes
+          ls -la
+          apk=$(ls *.apk | head -n 1)
+          if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" "$apk" --repo "${{ github.repository }}" --clobber
+          else
+            gh release create "${{ github.ref_name }}" "$apk" \
+              --repo "${{ github.repository }}" \
+              --title "Pocket Linux Display ${{ github.ref_name }}" \
+              --generate-notes
+          fi
