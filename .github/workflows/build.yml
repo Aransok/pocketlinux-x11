@@ -1,0 +1,106 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths-ignore:
+      - "**.md"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Single source of truth is ext.termuxX11NdkVersion in lorie/version.gradle; the check below
+  # fails the build if the two ever differ.
+  NDK_VERSION: "29.0.14206865"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Check the NDK version matches lorie/version.gradle
+        run: |
+          grep -q "termuxX11NdkVersion = \"$NDK_VERSION\"" lorie/version.gradle || {
+            echo "NDK_VERSION in this workflow differs from lorie/version.gradle" >&2
+            grep termuxX11NdkVersion lorie/version.gradle >&2
+            exit 1
+          }
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y bison patch python3
+
+      - name: Install NDK and CMake (the SDK itself is preinstalled on the runner)
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "ndk;$NDK_VERSION" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Fetch X server sources (pinned commits)
+        run: bash scripts/fetch-sources.sh
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug APK
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew --no-daemon :lorie-app:assembleDebug 2>&1 | tee build.log
+
+      - name: Check the APK
+        run: |
+          apk=lorie-app/build/outputs/apk/debug/pocketlinux-x11-debug.apk
+          ls -l "$apk"
+          cp "$apk" pocketlinux-x11-debug.apk
+          "$ANDROID_HOME"/build-tools/34.0.0/aapt2 dump badging pocketlinux-x11-debug.apk | head -n 5
+          unzip -l pocketlinux-x11-debug.apk | grep -E "lib/(arm64-v8a|x86_64)/libXlorie.so"
+
+      - name: Post log tail as a commit comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="### CI failure: ${{ github.job }} (${{ matrix.profile || 'no matrix' }})"$'\n```\n'"$(tail -c 60000 build.log 2>/dev/null | tail -n 200 || echo 'no build.log')"$'\n```'
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body="$body" >/dev/null || echo "could not post comment"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocketlinux-x11-debug.apk
+          path: pocketlinux-x11-debug.apk
+          if-no-files-found: error
+
+      - name: Upload the pl-x11 launcher script
+        uses: actions/upload-artifact@v4
+        with:
+          name: pl-x11
+          path: scripts/pl-x11
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pocketlinux-x11-debug.apk
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" pocketlinux-x11-debug.apk \
+            --repo "${{ github.repository }}" \
+            --title "Pocket Linux Display ${{ github.ref_name }}" \
+            --generate-notes

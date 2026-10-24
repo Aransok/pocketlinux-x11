@@ -1,0 +1,59 @@
+# From https://gist.github.com/iainconnor/8605514
+# with the addition of the /captures below.
+/captures
+
+# Built application files
+build/
+*.apk
+*.so
+.externalNativeBuild
+
+# Crashlytics configuations
+com_crashlytics_export_strings.xml
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Gradle generated files
+.gradle/
+
+# Signing files
+.signing/
+
+# Intellij
+.idea/
+*.iml
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.swp
+ehthumbs.db
+Thumbs.db
+
+#files containing github tokens
+github.properties
+
+*.cxx
+app/.cxx/*
+
+# Third party sources fetched by scripts/fetch-sources.sh (pinned commits)
+/lorie/src/main/cpp/bzip2/
+/lorie/src/main/cpp/libepoxy/
+/lorie/src/main/cpp/libfontenc/
+/lorie/src/main/cpp/libtirpc/
+/lorie/src/main/cpp/libx11/
+/lorie/src/main/cpp/libxau/
+/lorie/src/main/cpp/libxcvt/
+/lorie/src/main/cpp/libxdmcp/
+/lorie/src/main/cpp/libxfont/
+/lorie/src/main/cpp/libxkbfile/
+/lorie/src/main/cpp/libxshmfence/
+/lorie/src/main/cpp/libxtrans/
+/lorie/src/main/cpp/pixman/
+/lorie/src/main/cpp/xkbcomp/
+/lorie/src/main/cpp/xorgproto/
+/lorie/src/main/cpp/xserver/
