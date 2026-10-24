@@ -74,14 +74,14 @@ jobs:
           gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body="$body" >/dev/null || echo "could not post comment"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pocketlinux-x11-debug.apk
           path: pocketlinux-x11-debug.apk
           if-no-files-found: error
 
       - name: Upload the pl-x11 launcher script
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pl-x11
           path: scripts/pl-x11
