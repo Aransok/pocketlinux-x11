@@ -11,16 +11,16 @@
     <!--
         Pocket Linux Display change: the receivers below are the only way a client can hand the
         X server's Binder to this app. Upstream leaves them open to every app on the device. Here
-        a sender must hold CONNECT, which is a normal permission: an app (the Pocket Linux app)
-        opts in by declaring <uses-permission> for it. The X server process spawned from the proot
+        a sender must hold CONNECT, a normal permission defined and held by the Pocket Linux app. The X server process spawned from the proot
         guest runs under the Pocket Linux app's uid, so it holds the permission automatically.
         ${plReceiverPermission} is filled in by lorie-app/build.gradle (see NOTICE.md).
     -->
-    <permission
-        android:name="${applicationId}.permission.CONNECT"
-        android:description="@string/lorie_permission_connect_desc"
-        android:label="@string/lorie_permission_connect_label"
-        android:protectionLevel="normal" />
+    <!--
+        The CONNECT permission itself is defined by the Pocket Linux app (app.pocketlinux), not
+        here. A normal permission is only granted when its defining app is already installed, so
+        defining it here broke the usual order (Pocket Linux first, then this app). The app that
+        defines a permission always holds it, whatever the install order.
+    -->
 
     <application
         android:name=".LorieApp"
